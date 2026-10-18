@@ -1,0 +1,29 @@
+{
+  "name": "trace-board-frontend",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/web",
+    "packages/contracts"
+  ],
+  "engines": {
+    "node": ">=24.11.0"
+  },
+  "scripts": {
+    "build:contracts": "npm run build -w @traceboard/contracts",
+    "dev": "npm run build:contracts && npm run dev -w @traceboard/web",
+    "start": "npm run start -w @traceboard/web",
+    "build": "npm run build:contracts && npm run build -w @traceboard/web",
+    "typecheck": "npm run build:contracts && npm run typecheck --workspaces",
+    "lint": "npm run lint -w @traceboard/web",
+    "test": "npm run build:contracts && npm run test -w @traceboard/web",
+    "check:architecture": "node scripts/check-architecture.mjs --self-test",
+    "check:secrets": "node scripts/check-secrets.mjs",
+    "check:contracts": "node scripts/check-contracts.mjs",
+    "test:e2e": "npm run test:e2e -w @traceboard/web"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3"
+  }
+}

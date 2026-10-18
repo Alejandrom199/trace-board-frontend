@@ -1,0 +1,4 @@
+interface:
+  display_name: "TraceBoard: revisión arquitectónica"
+  short_description: "Auditoría de arquitectura, seguridad y pruebas con evidencia"
+  default_prompt: "Usa $traceboard-architecture-review para revisar TraceBoard y reportar hallazgos priorizados y comprobaciones reales."

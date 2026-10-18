@@ -1,0 +1,4 @@
+interface:
+  display_name: "TraceBoard: desarrollo"
+  short_description: "Cambios localizados con arquitectura y calidad verificable"
+  default_prompt: "Usa $traceboard-development para implementar el cambio solicitado en TraceBoard y reportar las verificaciones reales."

@@ -1,0 +1,11 @@
+.remote-investigations { border-top: 1px solid var(--border); margin-top: 14px; padding-top: 16px; }
+.remote-heading { display: flex; justify-content: space-between; align-items: center; }
+.remote-heading h3 { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 550; margin: 0; }
+.remote-heading svg { color: var(--accent); }
+.remote-investigations > p { font-size: 11px; line-height: 1.7; }
+.remote-investigations .project-row { width: 100%; margin-top: 8px; }
+.remote-investigations .project-row small { white-space: normal; overflow-wrap: anywhere; }
+.remote-investigations .remote-error { color: #e8ae98; background: #382a26; border: 1px solid #765343; padding: 10px; border-radius: 6px; }
+.remote-board-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 18px; border-bottom: 1px solid #303541; background: #1b202a; font-size: 12px; }
+.remote-board-bar small { display: block; margin-top: 4px; color: #a6adbb; }
+.remote-board-bar .remote-error { flex-basis: 100%; margin: 0; }
