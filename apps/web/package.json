@@ -20,7 +20,7 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "zod": "4.6.7",
-    "@traceboard/contracts": "0.1.0"
+    "@traceboard/contracts": "0.2.0"
   },
   "devDependencies": {
     "@playwright/test": "1.64.0",
