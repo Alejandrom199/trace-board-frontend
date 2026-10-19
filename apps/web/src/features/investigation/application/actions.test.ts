@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { demoInvestigation } from '../domain/demo';
 import { investigationSchema, evidenceFor, cardTypes, entitySchema } from '../domain/model';
-import { addCard, connectCards, createInvestigation, removeCards, updateCard, updateRelation, withRequirementType } from './actions';
+import { addCard, connectCards, createInvestigation, removeCards, removeInvestigation, updateCard, updateRelation, withRequirementType } from './actions';
 const now = '2026-10-13T15:00:00.000Z';
 describe('Integridad y acciones de investigación', () => {
   it('valida el tablero de inventario sin referencias huérfanas', () => { expect(investigationSchema.safeParse(demoInvestigation()).success).toBe(true); });
@@ -49,6 +49,15 @@ describe('Integridad y acciones de investigación', () => {
   it('impide códigos de requisitos duplicados incluso con cambios de mayúsculas', () => {
     const board = demoInvestigation(); const entity = board.entities.find(entity => entity.id === 'req-stock');
     expect(() => updateCard(board, { ...entity!, requirement: { ...entity!.requirement!, code: 'rf-001' } })).toThrow();
+  });
+  it('elimina una investigación, cambia la activa y conserva al menos una', () => {
+    const other = createInvestigation('other', 'Compras', now);
+    const workspace = { version: 1 as const, activeId: 'inventory', investigations: [demoInvestigation(), other] };
+    const result = removeInvestigation(workspace, 'inventory');
+    expect(result.investigations.map(item => item.id)).toEqual(['other']); expect(result.activeId).toBe('other');
+    expect(removeInvestigation(workspace, 'other').activeId).toBe('inventory');
+    expect(() => removeInvestigation(result, 'other')).toThrow('al menos una');
+    expect(() => removeInvestigation(workspace, 'missing')).toThrow('ya no existe');
   });
   it('crea cada tipo con sus atributos y códigos propios sin chocar con los existentes', () => {
     let board = demoInvestigation();

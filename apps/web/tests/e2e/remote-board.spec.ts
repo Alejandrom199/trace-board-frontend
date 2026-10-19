@@ -12,7 +12,7 @@ async function createRemote(page: Page, name: string) {
 async function openRemote(page: Page, url: string, name: string) {
   await page.goto(url); await expect(page.getByText('Guardado local', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Abrir investigaciones', exact: true }).click();
-  await page.getByRole('region', { name: 'Investigaciones en base de datos' }).getByRole('button', { name: new RegExp(name) }).click();
+  await page.getByRole('region', { name: 'Investigaciones en base de datos' }).getByRole('button', { name: new RegExp('^' + name) }).click();
   await expect(page.locator('.project-title')).toHaveText(name);
 }
 async function addCard(page: Page, kind: string, title: string) {
@@ -61,10 +61,10 @@ test('conflicto remoto conserva el borrador local y permite reabrir sin perderlo
     await expect(page.locator('.remote-board-bar').getByRole('alert')).toContainText('Otra sesión guardó');
     await expect(page.locator('.knowledge-card')).toHaveCount(2);
     await page.getByRole('button', { name: 'Abrir investigaciones', exact: true }).click();
-    await page.getByRole('region', { name: 'Investigaciones en base de datos' }).getByRole('button', { name: new RegExp(name) }).click();
+    await page.getByRole('region', { name: 'Investigaciones en base de datos' }).getByRole('button', { name: new RegExp('^' + name) }).click();
     await expect(page.locator('.remote-board-bar')).toContainText('Versión 2 en PostgreSQL');
     await page.getByRole('button', { name: 'Abrir investigaciones', exact: true }).click();
-    await page.getByRole('button', { name: new RegExp(name + ' \\(copia local\\)') }).click();
+    await page.getByRole('button', { name: new RegExp('^' + name + ' \\(copia local\\)') }).click();
     await page.getByRole('button', { name: 'Buscar tarjetas', exact: true }).click();
     await page.getByRole('textbox', { name: 'Buscar tarjetas', exact: true }).fill('Borrador que conservar');
     await expect(page.getByRole('button', { name: /Borrador que conservar/ })).toBeVisible();

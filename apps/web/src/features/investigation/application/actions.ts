@@ -1,4 +1,4 @@
-import { codePrefixes, entityCode, investigationSchema, type CardType, type Entity, type Investigation, type Relation, type RelationType, type RequirementType } from '../domain/model';
+import { codePrefixes, entityCode, investigationSchema, workspaceSchema, type CardType, type Entity, type Investigation, type Relation, type RelationType, type RequirementType, type Workspace } from '../domain/model';
 
 const newTitles: Record<CardType, string> = {
   note: 'Nueva nota', document: 'Nuevo documento', image: 'Nueva imagen', finding: 'Nuevo hallazgo', problem: 'Nuevo problema', question: 'Nueva pregunta',
@@ -32,6 +32,14 @@ export function withRequirementType(board: Investigation, entity: Entity, type: 
 
 export function createInvestigation(id: string, name: string, now: string): Investigation {
   return investigationSchema.parse({ id, name: name.trim(), description: '', createdAt: now, updatedAt: now, entities: [], edges: [], elements: [], assets: [] });
+}
+/** Quita una investigación del espacio local; si era la activa, abre la primera restante. */
+export function removeInvestigation(workspace: Workspace, id: string): Workspace {
+  const investigations = workspace.investigations.filter(item => item.id !== id);
+  if (investigations.length === workspace.investigations.length) throw new Error('La investigación ya no existe');
+  const [first] = investigations;
+  if (!first) throw new Error('Debe quedar al menos una investigación');
+  return workspaceSchema.parse({ ...workspace, investigations, activeId: workspace.activeId === id ? first.id : workspace.activeId });
 }
 export function addCard(board: Investigation, kind: CardType, id: string, now: string, position: { x: number; y: number }): Investigation {
   const entity: Entity = { id, kind, title: newTitles[kind], description: '', createdAt: now, updatedAt: now, ...defaultAttributes(kind, board.entities) };

@@ -8,7 +8,7 @@ import type { CardType, Investigation } from '../domain/model';
 const nodeTypes = { card: CardNode };
 const edgeTypes = { semantic: SemanticEdge };
 const minimapColors: Partial<Record<CardType, string>> = {
-  requirement: '#8373c4', finding: '#c59953', problem: '#b9665c', question: '#6f8fc0', actor: '#5f9ea8', business_rule: '#b98552', decision: '#a9709c', external_system: '#7c8496',
+  requirement: '#0e5e6f', finding: '#a8740a', problem: '#b42318', question: '#3b5ba9', actor: '#0f766e', process: '#2f5f8a', business_rule: '#8b5e34', decision: '#6a4c93', external_system: '#59636e',
 };
 export const toCanvasId = (id: string) => `card:${id}`;
 export const fromCanvasId = (id: string) => id.slice(5);
@@ -44,7 +44,7 @@ export function BoardCanvas(props: Props) {
   }), [board, selected, props.onPreview, measurements, downwardFlow]);
   const edges = useMemo<CanvasEdge[]>(() => board.edges.map(edge => ({ id: edge.id, source: toCanvasId(edge.sourceId), target: toCanvasId(edge.targetId),
     sourceHandle: downwardFlow.has(edge.id) ? 'flow-out' : undefined, targetHandle: downwardFlow.has(edge.id) ? 'flow-in' : undefined,
-    type: 'semantic', selected: edge.id === edgeId, data: { relation: edge.relation, flow: edge.metadata.categoria === 'flujo' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#747080', width: 18, height: 18 } })), [board.edges, edgeId, downwardFlow]);
+    type: 'semantic', selected: edge.id === edgeId, data: { relation: edge.relation, flow: edge.metadata.categoria === 'flujo' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#8a97a3', width: 16, height: 16 } })), [board.edges, edgeId, downwardFlow]);
   const onNodesChange = useCallback((changes: NodeChange<CanvasNode>[]) => {
     const dimensions = changes.filter(change => change.type === 'dimensions');
     if (dimensions.length) setMeasurements(current => {
@@ -70,7 +70,7 @@ export function BoardCanvas(props: Props) {
   return <ReactFlow<CanvasNode, CanvasEdge>
     nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
     onConnect={props.onConnect} onInit={props.onInit} fitView={!board.viewport} defaultViewport={board.viewport} fitViewOptions={{ padding: 0.12, maxZoom: 0.95 }}
-    minZoom={0.15} maxZoom={2} colorMode="dark" deleteKeyCode={null} selectionOnDrag={!props.pan} panOnDrag={props.pan ? true : [1, 2]} panOnScroll zoomOnScroll={false} zoomActivationKeyCode="Control" multiSelectionKeyCode="Shift"
+    minZoom={0.15} maxZoom={2} colorMode="light" deleteKeyCode={null} selectionOnDrag={!props.pan} panOnDrag={props.pan ? true : [1, 2]} panOnScroll zoomOnScroll={false} zoomActivationKeyCode="Control" multiSelectionKeyCode="Shift"
     onMoveEnd={(_, viewport) => props.onViewport(viewport)} onNodeClick={() => onEdge(null)}
     onEdgeClick={(_, edge) => { onSelect([]); onEdge(edge.id); }} onPaneClick={() => { onSelect([]); onEdge(null); }}
     onDoubleClick={event => { if ((event.target as HTMLElement).classList.contains('react-flow__pane')) props.onAddNote({ x: event.clientX, y: event.clientY }); }}
@@ -79,7 +79,7 @@ export function BoardCanvas(props: Props) {
     isValidConnection={connection => connection.source !== connection.target && !board.edges.some(edge => toCanvasId(edge.sourceId) === connection.source && toCanvasId(edge.targetId) === connection.target && edge.relation === 'evidences')}
     aria-label="Lienzo de investigación" defaultEdgeOptions={{ type: 'semantic' }}
   >
-    <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#343640" />
-    {props.minimap && <MiniMap<CanvasNode> position="bottom-right" nodeColor={node => minimapColors[node.data.entity.kind] ?? '#506976'} maskColor="rgba(15,17,22,.65)" pannable zoomable />}
+    <Background variant={BackgroundVariant.Lines} gap={32} lineWidth={0.5} color="#dde3e7" />
+    {props.minimap && <MiniMap<CanvasNode> position="bottom-right" nodeColor={node => minimapColors[node.data.entity.kind] ?? '#9aa4ad'} maskColor="rgba(238,241,242,.7)" pannable zoomable />}
   </ReactFlow>;
 }

@@ -17,9 +17,12 @@ async function request(path: string, init?: RequestInit): Promise<unknown> {
     if (response.status === 413) throw new Error('El tablero supera el límite remoto de 8 MB. Tu copia local se conserva.');
     throw new Error('La base de datos no está disponible. Puedes continuar con tus investigaciones locales.');
   }
+  if (response.status === 204) return null;
   try { return await response.json(); }
   catch { throw new Error('La API devolvió una respuesta inválida. Vuelve a intentarlo.'); }
 }
+/** Elimina la investigación remota con su tablero y archivos; no toca las copias locales. */
+export async function deleteRemoteInvestigation(id: string): Promise<void> { await request('/' + encodeURIComponent(id), { method: 'DELETE' }); }
 export async function listRemoteInvestigations(): Promise<InvestigationDto[]> { return validated(investigationListSchema, await request('')); }
 export async function createRemoteInvestigation(input: CreateInvestigationRequest): Promise<InvestigationDto> {
   const parsed = createInvestigationRequestSchema.parse(input);

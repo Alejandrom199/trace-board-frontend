@@ -22,7 +22,7 @@ async function create(page: Page, name: string) {
 async function open(page: Page, url: string, name: string) {
   await page.goto(url); await expect(page.getByText('Guardado local', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Abrir investigaciones', exact: true }).click();
-  await page.getByRole('region', { name: 'Investigaciones en base de datos' }).getByRole('button', { name: new RegExp(name) }).click();
+  await page.getByRole('region', { name: 'Investigaciones en base de datos' }).getByRole('button', { name: new RegExp('^' + name) }).click();
   await expect(page.locator('.project-title')).toHaveText(name);
 }
 async function preview(page: Page, name: string) {

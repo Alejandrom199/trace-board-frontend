@@ -154,3 +154,22 @@ test('crea una regla de negocio y un requisito no funcional visibles en la vista
   await expect(nonFunctional).toContainText('Responder en menos de 2 segundos');
   await expect(page.getByRole('region', { name: 'Requisitos funcionales' })).toContainText('RF-001');
 });
+
+test('elimina una investigación local tras confirmar y conserva el resto al recargar', async ({ page }) => {
+  await page.goto('/'); await expect(page.getByText('Guardado local', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Abrir investigaciones', exact: true }).click();
+  await page.getByLabel('Nombre de investigación').fill('Borrar después');
+  await page.getByRole('button', { name: 'Crear investigación', exact: true }).click();
+  await page.getByRole('button', { name: 'Abrir investigaciones', exact: true }).click();
+  await page.getByRole('button', { name: 'Eliminar investigación Borrar después', exact: true }).click();
+  const confirm = page.getByRole('group', { name: 'Confirmar eliminación de Borrar después' });
+  await confirm.getByRole('button', { name: 'Cancelar', exact: true }).click();
+  await expect(page.getByRole('button', { name: /Borrar después/ }).first()).toBeVisible();
+  await page.getByRole('button', { name: 'Eliminar investigación Borrar después', exact: true }).click();
+  await confirm.getByRole('button', { name: 'Eliminar', exact: true }).click();
+  await expect(page.locator('.project-title')).toHaveText('Sistema de Inventario');
+  await expect(page.getByText('Guardado local', { exact: true })).toBeVisible(); await page.reload();
+  await page.getByRole('button', { name: 'Abrir investigaciones', exact: true }).click();
+  await expect(page.getByRole('button', { name: /Borrar después/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Eliminar investigación Sistema de Inventario', exact: true })).toBeDisabled();
+});
