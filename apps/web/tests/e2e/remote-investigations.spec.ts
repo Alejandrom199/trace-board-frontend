@@ -30,5 +30,5 @@ test('una API caída informa el error y permite trabajar localmente', async ({ p
   await expect(page.getByRole('region', { name: 'Investigaciones en base de datos' }).getByRole('alert')).toContainText('base de datos no está disponible');
   await page.getByRole('button', { name: 'Cerrar diálogo', exact: true }).click();
   await page.getByRole('button', { name: 'Añadir nota', exact: true }).click();
-  await expect(page.locator('.knowledge-card')).toHaveCount(9);
+  await expect(page.locator('.knowledge-card')).toHaveCount(13);
 });

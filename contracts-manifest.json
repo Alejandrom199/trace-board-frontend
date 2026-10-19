@@ -1,6 +1,6 @@
 {
-  "version": "0.1.0",
+  "version": "0.2.0",
   "files": {
-    "packages/contracts/src/index.ts": "54acc93661b9eaf7fbd9a58090ea3b22101733443aa35b50f6547de848b0ed8f"
+    "packages/contracts/src/index.ts": "4ea6e108e520501c45b0d48a9e7b14b1d75fab8cc3bf39da4f670c483d4e4f8b"
   }
 }

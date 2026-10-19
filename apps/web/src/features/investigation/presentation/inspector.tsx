@@ -1,8 +1,9 @@
 'use client';
 import { useState } from 'react';
 import { X, Link2, ArrowDownLeft, ArrowUpRight, Trash2, FileText, Plus, Check, ChevronRight } from 'lucide-react';
-import { cardLabels, evidenceFor, relationLabels, relationTypes, type Entity, type Investigation, type Relation, type RelationType } from '../domain/model';
-import { cardIcons, priorityLabels, statusLabels } from './card-node';
+import { cardLabels, entityCode, evidenceFor, relationLabels, relationTypes, type Entity, type Investigation, type Relation, type RelationType } from '../domain/model';
+import { cardIcons } from './card-node';
+import { EntityFields } from './entity-fields';
 
 interface Props {
   board: Investigation; entity?: Entity; edge?: Relation;
@@ -33,7 +34,7 @@ export function Inspector(props: Props) {
   const dirty = JSON.stringify(draft) !== JSON.stringify(entity);
   const save = () => {
     if (!draft.title.trim()) { setFeedback('El título no puede estar vacío.'); return; }
-    if (draft.requirement && !draft.requirement.code.trim()) { setFeedback('El identificador no puede estar vacío.'); return; }
+    if (entityCode(draft)?.trim() === '') { setFeedback('El identificador no puede estar vacío.'); return; }
     const applied = { ...draft, title: draft.title.trim(), updatedAt: new Date().toISOString() };
     const success = props.onUpdate(applied); if (success) setDraft(applied); setFeedback(success ? 'Cambios aplicados' : 'No se pudo aplicar el cambio. Revisa los campos.');
   };
@@ -43,18 +44,13 @@ export function Inspector(props: Props) {
   };
   return <aside className="inspector" aria-label="Inspector de tarjeta">
     <div className="inspector-heading"><span>Inspector</span><button className="icon-button" onClick={props.onClose} aria-label="Cerrar inspector"><X size={17} /></button></div>
-    <div className={`inspector-identity ${entity.kind}`}><span className="identity-icon"><Icon size={20} /></span><div><small>{cardLabels[entity.kind]} {entity.requirement?.code}</small><h2>{entity.title}</h2></div></div>
+    <div className={`inspector-identity ${entity.kind}`}><span className="identity-icon"><Icon size={20} /></span><div><small>{cardLabels[entity.kind]} {entityCode(entity)}</small><h2>{entity.title}</h2></div></div>
     <div className="inspector-tabs"><button className={tab === 'properties' ? 'active' : ''} onClick={() => setTab('properties')}>Propiedades</button><button className={tab === 'relations' ? 'active' : ''} onClick={() => setTab('relations')}>Relaciones <span>{incoming.length + outgoing.length}</span></button></div>
     <div className="inspector-content">
       {tab === 'properties' ? <>
         <label>Título<input aria-label="Título de tarjeta" maxLength={200} value={draft.title} onChange={event => setDraft({ ...draft, title: event.target.value })} /></label>
         <label>Descripción<textarea aria-label="Descripción de tarjeta" maxLength={10000} rows={5} placeholder="Añade contexto a tu investigación…" value={draft.description} onChange={event => setDraft({ ...draft, description: event.target.value })} /></label>
-        {draft.requirement && <>
-          <label>Identificador<input maxLength={40} value={draft.requirement.code} onChange={event => setDraft({ ...draft, requirement: { ...draft.requirement!, code: event.target.value } })} /></label>
-          <div className="field-pair"><label>Prioridad<select value={draft.requirement.priority} onChange={event => setDraft({ ...draft, requirement: { ...draft.requirement!, priority: event.target.value as NonNullable<Entity['requirement']>['priority'] } })}>{Object.entries(priorityLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
-          <label>Estado<select value={draft.requirement.status} onChange={event => setDraft({ ...draft, requirement: { ...draft.requirement!, status: event.target.value as NonNullable<Entity['requirement']>['status'] } })}>{Object.entries(statusLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label></div>
-          <label>Criterios de aceptación<textarea rows={5} maxLength={10000} value={draft.requirement.criteria.join('\n')} onChange={event => setDraft({ ...draft, requirement: { ...draft.requirement!, criteria: event.target.value.split('\n').slice(0, 40) } })} placeholder="Un criterio por línea" /></label>
-        </>}
+        <EntityFields board={board} draft={draft} onChange={setDraft} />
         <button className="primary-button full" disabled={!dirty} onClick={save}><Check size={15} />Guardar cambios</button>
         {feedback && <p className="inline-feedback" role="status">{feedback}</p>}
         {asset && <section className="inspector-section"><h3>Archivo asociado</h3><button className="attachment" onClick={() => props.onPreview(entity.id)}><FileText size={18} /><span>{asset.name}<small>{Math.round(asset.size / 1000)} KB · {asset.remoteFile ? 'Original guardado en backend' : asset.url ? 'Vista previa local' : 'Metadatos'}</small></span><ArrowUpRight size={15} /></button></section>}

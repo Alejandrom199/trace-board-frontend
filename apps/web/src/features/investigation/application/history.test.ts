@@ -60,7 +60,7 @@ describe('Historial del tablero independiente del editor', () => {
     expect(() => recordHistory(emptyHistory(), before, other, 'Mezclar')).toThrow('una sola investigación');
     const history = recordHistory(emptyHistory(), before, after, 'Eliminar');
     expect(() => stepHistory(history, other, 'undo', now)).toThrow('otra investigación');
-    expect(before.entities).toHaveLength(8); expect(after.entities).toHaveLength(7);
+    expect(before.entities).toHaveLength(12); expect(after.entities).toHaveLength(11);
   });
   it('restaura varias posiciones como una única acción', () => {
     const before = demoInvestigation();

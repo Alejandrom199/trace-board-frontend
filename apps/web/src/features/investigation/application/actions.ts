@@ -1,15 +1,40 @@
-import { cardLabels, investigationSchema, type CardType, type Entity, type Investigation, type Relation, type RelationType } from '../domain/model';
+import { codePrefixes, entityCode, investigationSchema, type CardType, type Entity, type Investigation, type Relation, type RelationType, type RequirementType } from '../domain/model';
+
+const newTitles: Record<CardType, string> = {
+  note: 'Nueva nota', document: 'Nuevo documento', image: 'Nueva imagen', finding: 'Nuevo hallazgo', problem: 'Nuevo problema', question: 'Nueva pregunta',
+  actor: 'Nuevo actor', process: 'Nuevo proceso', business_rule: 'Nueva regla de negocio', external_system: 'Nuevo sistema externo', requirement: 'Nuevo requisito', decision: 'Nueva decisión',
+};
+/** Primer código libre con el prefijo, comparando con todos los tipos codificados de la investigación. */
+export function nextCode(entities: Entity[], prefix: string): string {
+  const codes = new Set(entities.map(entity => entityCode(entity)?.trim().toUpperCase()));
+  let sequence = 1;
+  while (codes.has(`${prefix}-${String(sequence).padStart(3, '0')}`)) sequence++;
+  return `${prefix}-${String(sequence).padStart(3, '0')}`;
+}
+function defaultAttributes(kind: CardType, entities: Entity[]): Partial<Entity> {
+  switch (kind) {
+    case 'requirement': return { requirement: { code: nextCode(entities, codePrefixes.functional), priority: 'medium', status: 'draft', criteria: [], type: 'functional' } };
+    case 'actor': return { actor: { category: 'user' } };
+    case 'problem': return { problem: { severity: 'medium', status: 'open' } };
+    case 'business_rule': return { businessRule: { code: nextCode(entities, codePrefixes.business_rule) } };
+    case 'question': return { question: { status: 'open', answer: '' } };
+    case 'decision': return { decision: { code: nextCode(entities, codePrefixes.decision), status: 'proposed', rationale: '' } };
+    default: return {};
+  }
+}
+/** Cambia entre RF y RNF; renumera solo los códigos con formato automático para respetar los editados a mano. */
+export function withRequirementType(board: Investigation, entity: Entity, type: RequirementType): Entity {
+  if (!entity.requirement || entity.requirement.type === type) return entity;
+  const automatic = /^(RF|RNF)-\d+$/i.test(entity.requirement.code.trim());
+  const code = automatic ? nextCode(board.entities.filter(item => item.id !== entity.id), codePrefixes[type]) : entity.requirement.code;
+  return { ...entity, requirement: { ...entity.requirement, type, code, category: type === 'non_functional' ? entity.requirement.category ?? 'performance' : undefined } };
+}
 
 export function createInvestigation(id: string, name: string, now: string): Investigation {
   return investigationSchema.parse({ id, name: name.trim(), description: '', createdAt: now, updatedAt: now, entities: [], edges: [], elements: [], assets: [] });
 }
 export function addCard(board: Investigation, kind: CardType, id: string, now: string, position: { x: number; y: number }): Investigation {
-  const codes = new Set(board.entities.map(entity => entity.requirement?.code));
-  let sequence = 1;
-  while (codes.has(`RF-${String(sequence).padStart(3, '0')}`)) sequence++;
-  const entity: Entity = { id, kind, title: `Nueva ${cardLabels[kind].toLowerCase()}`, description: '', createdAt: now, updatedAt: now,
-    ...(kind === 'requirement' ? { title: 'Nuevo requisito', requirement: { code: `RF-${String(sequence).padStart(3, '0')}`, priority: 'medium', status: 'draft', criteria: [] } } : {}),
-  };
+  const entity: Entity = { id, kind, title: newTitles[kind], description: '', createdAt: now, updatedAt: now, ...defaultAttributes(kind, board.entities) };
   return investigationSchema.parse({ ...board, updatedAt: now, entities: [...board.entities, entity], elements: [...board.elements, { nodeId: id, ...position }] });
 }
 export function updateCard(board: Investigation, entity: Entity): Investigation {

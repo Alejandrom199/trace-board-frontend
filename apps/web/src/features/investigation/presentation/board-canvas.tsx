@@ -3,10 +3,13 @@ import { useMemo, useCallback, useState } from 'react';
 import { ReactFlow, Background, BackgroundVariant, MiniMap, MarkerType, type Connection, type NodeChange, type EdgeChange, type ReactFlowInstance, type Viewport } from '@xyflow/react';
 import { CardNode, type CanvasNode } from './card-node';
 import { SemanticEdge, type CanvasEdge } from './semantic-edge';
-import type { Investigation } from '../domain/model';
+import type { CardType, Investigation } from '../domain/model';
 
 const nodeTypes = { card: CardNode };
 const edgeTypes = { semantic: SemanticEdge };
+const minimapColors: Partial<Record<CardType, string>> = {
+  requirement: '#8373c4', finding: '#c59953', problem: '#b9665c', question: '#6f8fc0', actor: '#5f9ea8', business_rule: '#b98552', decision: '#a9709c', external_system: '#7c8496',
+};
 export const toCanvasId = (id: string) => `card:${id}`;
 export const fromCanvasId = (id: string) => id.slice(5);
 
@@ -77,6 +80,6 @@ export function BoardCanvas(props: Props) {
     aria-label="Lienzo de investigación" defaultEdgeOptions={{ type: 'semantic' }}
   >
     <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#343640" />
-    {props.minimap && <MiniMap<CanvasNode> position="bottom-right" nodeColor={node => node.data.entity.kind === 'requirement' ? '#8373c4' : node.data.entity.kind === 'finding' ? '#c59953' : '#506976'} maskColor="rgba(15,17,22,.65)" pannable zoomable />}
+    {props.minimap && <MiniMap<CanvasNode> position="bottom-right" nodeColor={node => minimapColors[node.data.entity.kind] ?? '#506976'} maskColor="rgba(15,17,22,.65)" pannable zoomable />}
   </ReactFlow>;
 }

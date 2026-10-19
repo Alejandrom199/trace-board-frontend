@@ -15,8 +15,12 @@ export function demoInvestigation(): Investigation {
       card('screenshot', 'image', 'El sistema actual', 'La pantalla de existencias no permite consultar el historial de movimientos.', { assetId: 'screenshot-file' }),
       card('finding-trace', 'finding', 'No hay trazabilidad de movimientos', 'Los ingresos, salidas y ajustes no conservan un historial verificable. Es imposible reconstruir quién modificó una existencia.'),
       card('finding-stock', 'finding', 'El stock físico no coincide', 'Los registros duplicados y las salidas sin registrar generan diferencias entre bodega y sistema.'),
-      card('req-trace', 'requirement', 'Registrar cada movimiento de inventario', 'El sistema debe registrar fecha, usuario, producto, cantidad y tipo en cada ingreso, salida o ajuste.', { requirement: { code: 'RF-001', priority: 'high', status: 'review', criteria: ['Cada movimiento conserva fecha, usuario, producto, cantidad y tipo.', 'El historial se puede consultar por producto y fecha.', 'Los movimientos registrados no se eliminan sin una auditoría.'] } }),
-      card('req-stock', 'requirement', 'Validar existencias antes de una salida', 'Comprobar disponibilidad y actualizar la existencia al registrar una salida, evitando stock negativo.', { requirement: { code: 'RF-002', priority: 'critical', status: 'draft', criteria: ['Una salida no puede superar el stock disponible.', 'El stock se actualiza al confirmar el movimiento.'] } }),
+      card('req-trace', 'requirement', 'Registrar cada movimiento de inventario', 'El sistema debe registrar fecha, usuario, producto, cantidad y tipo en cada ingreso, salida o ajuste.', { requirement: { code: 'RF-001', type: 'functional', priority: 'high', status: 'review', criteria: ['Cada movimiento conserva fecha, usuario, producto, cantidad y tipo.', 'El historial se puede consultar por producto y fecha.', 'Los movimientos registrados no se eliminan sin una auditoría.'] } }),
+      card('req-stock', 'requirement', 'Validar existencias antes de una salida', 'Comprobar disponibilidad y actualizar la existencia al registrar una salida, evitando stock negativo.', { requirement: { code: 'RF-002', type: 'functional', priority: 'critical', status: 'draft', criteria: ['Una salida no puede superar el stock disponible.', 'El stock se actualiza al confirmar el movimiento.'] } }),
+      card('problem-loss', 'problem', 'Pérdidas por diferencias de inventario', 'Las diferencias entre bodega y sistema obligan a compras urgentes y ocultan mermas.', { problem: { severity: 'high', status: 'open' } }),
+      card('rule-stock', 'business_rule', 'No se permite stock negativo', 'Ninguna salida puede dejar la existencia de un producto por debajo de cero.', { businessRule: { code: 'RN-001' } }),
+      card('actor-warehouse', 'actor', 'Encargado de bodega', 'Registra ingresos y salidas y responde por las existencias físicas.', { actor: { category: 'user' } }),
+      card('question-adjust', 'question', '¿Quién autoriza los ajustes manuales?', 'Confirmar si existe un rol aprobador y si queda constancia de la autorización.', { question: { status: 'open', answer: '' } }),
       card('note', 'note', 'Para la próxima entrevista', '¿Quién autoriza los ajustes?\n¿Cómo se gestionan las devoluciones?\n¿Se cuentan las existencias periódicamente?'),
     ],
     assets: [
@@ -28,8 +32,11 @@ export function demoInvestigation(): Investigation {
       { nodeId: 'interview', x: 70, y: 80 }, { nodeId: 'spreadsheet', x: 70, y: 370 }, { nodeId: 'screenshot', x: 70, y: 640 },
       { nodeId: 'finding-trace', x: 580, y: 130 }, { nodeId: 'finding-stock', x: 580, y: 520 },
       { nodeId: 'req-trace', x: 1080, y: 90 }, { nodeId: 'req-stock', x: 1080, y: 480 }, { nodeId: 'note', x: 1080, y: 800 },
+      { nodeId: 'problem-loss', x: 580, y: 860 }, { nodeId: 'rule-stock', x: 1560, y: 480 }, { nodeId: 'actor-warehouse', x: 1560, y: 800 }, { nodeId: 'question-adjust', x: 1560, y: 90 },
     ],
-    edges: [edge('e1', 'interview', 'finding-trace', 'evidences'), edge('e2', 'spreadsheet', 'finding-trace', 'evidences'), edge('e3', 'spreadsheet', 'finding-stock', 'evidences'), edge('e4', 'screenshot', 'finding-stock', 'evidences'), edge('e5', 'finding-trace', 'req-trace', 'originates'), edge('e6', 'finding-stock', 'req-stock', 'originates'), edge('e7', 'req-stock', 'req-trace', 'depends_on')],
+    edges: [edge('e1', 'interview', 'finding-trace', 'evidences'), edge('e2', 'spreadsheet', 'finding-trace', 'evidences'), edge('e3', 'spreadsheet', 'finding-stock', 'evidences'), edge('e4', 'screenshot', 'finding-stock', 'evidences'), edge('e5', 'finding-trace', 'req-trace', 'originates'), edge('e6', 'finding-stock', 'req-stock', 'originates'), edge('e7', 'req-stock', 'req-trace', 'depends_on'),
+      edge('e8', 'finding-stock', 'problem-loss', 'evidences'), edge('e9', 'problem-loss', 'req-stock', 'originates'), edge('e10', 'rule-stock', 'req-stock', 'affects'),
+      edge('e11', 'question-adjust', 'finding-trace', 'related_to'), edge('e12', 'question-adjust', 'actor-warehouse', 'references')],
   });
 }
 export function demoWorkspace(): Workspace { return { version: 1, activeId: 'inventory', investigations: [demoInvestigation()] }; }

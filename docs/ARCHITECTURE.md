@@ -19,6 +19,8 @@ No crear módulos adicionales hasta que una funcionalidad tenga responsabilidad 
 ## Modelo y flujo
 Una investigación contiene entidades permanentes, relaciones semánticas, elementos visuales y viewport por separado. React Flow recibe una proyección; sus IDs se prefijan y nunca se persisten como IDs de entidades. Mover una tarjeta cambia su posición, no su significado. Eliminar una entidad elimina relaciones y posición asociadas.
 
+Hay doce tipos de entidad agrupados en fuentes, análisis, negocio y solución. Los requisitos, actores, problemas, reglas, preguntas y decisiones tienen atributos propios validados por tipo; RF, RNF, RN y DEC son códigos únicos dentro de la investigación. Ver ADR-008.
+
 La categoría opcional de relación `metadata.categoria=flujo` adapta la lectura del canvas: rutas ortogonales y puertos superior/inferior cuando el destino está en una fila inferior; `related_to` se presenta como «Continúa». No cambia el tipo de relación ni añade dependencia al dominio. El inspector conserva el tipo semántico y su descripción. Las demás relaciones mantienen su proyección habitual.
 
 ```mermaid

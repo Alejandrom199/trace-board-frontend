@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { demoInvestigation } from '../domain/demo';
-import { investigationSchema, evidenceFor } from '../domain/model';
-import { addCard, connectCards, createInvestigation, removeCards, updateCard, updateRelation } from './actions';
+import { investigationSchema, evidenceFor, cardTypes, entitySchema } from '../domain/model';
+import { addCard, connectCards, createInvestigation, removeCards, updateCard, updateRelation, withRequirementType } from './actions';
 const now = '2026-10-13T15:00:00.000Z';
 describe('Integridad y acciones de investigación', () => {
   it('valida el tablero de inventario sin referencias huérfanas', () => { expect(investigationSchema.safeParse(demoInvestigation()).success).toBe(true); });
@@ -49,5 +49,44 @@ describe('Integridad y acciones de investigación', () => {
   it('impide códigos de requisitos duplicados incluso con cambios de mayúsculas', () => {
     const board = demoInvestigation(); const entity = board.entities.find(entity => entity.id === 'req-stock');
     expect(() => updateCard(board, { ...entity!, requirement: { ...entity!.requirement!, code: 'rf-001' } })).toThrow();
+  });
+  it('crea cada tipo con sus atributos y códigos propios sin chocar con los existentes', () => {
+    let board = demoInvestigation();
+    for (const kind of cardTypes) board = addCard(board, kind, `new-${kind}`, now, { x: 0, y: 0 });
+    const created = (kind: string) => board.entities.find(entity => entity.id === `new-${kind}`);
+    expect(created('business_rule')?.businessRule?.code).toBe('RN-002');
+    expect(created('decision')?.decision).toEqual({ code: 'DEC-001', status: 'proposed', rationale: '' });
+    expect(created('requirement')?.requirement).toMatchObject({ code: 'RF-003', type: 'functional' });
+    expect(created('problem')?.problem).toEqual({ severity: 'medium', status: 'open' });
+    expect(created('question')?.title).toBe('Nueva pregunta'); expect(created('external_system')?.title).toBe('Nuevo sistema externo');
+  });
+  it('exige los atributos de cada tipo y rechaza los de otro tipo', () => {
+    const base = { id: 'x', title: 'Tarjeta', description: '', createdAt: now, updatedAt: now };
+    expect(entitySchema.safeParse({ ...base, kind: 'actor', actor: { category: 'area' } }).success).toBe(true);
+    expect(entitySchema.safeParse({ ...base, kind: 'problem' }).success).toBe(false);
+    expect(entitySchema.safeParse({ ...base, kind: 'note', actor: { category: 'user' } }).success).toBe(false);
+    expect(entitySchema.safeParse({ ...base, kind: 'external_system' }).success).toBe(true);
+    const requirement = { code: 'RF-009', priority: 'low', status: 'draft', criteria: [] };
+    expect(entitySchema.safeParse({ ...base, kind: 'requirement', requirement: { ...requirement, type: 'functional', category: 'security' } }).success).toBe(false);
+    expect(entitySchema.safeParse({ ...base, kind: 'requirement', requirement: { ...requirement, type: 'non_functional' } }).success).toBe(false);
+  });
+  it('interpreta como funcionales los requisitos guardados sin tipo', () => {
+    const legacy = entitySchema.parse({ id: 'x', kind: 'requirement', title: 'Antiguo', description: '', createdAt: now, updatedAt: now, requirement: { code: 'RF-009', priority: 'low', status: 'draft', criteria: [] } });
+    expect(legacy.requirement?.type).toBe('functional'); expect(legacy.requirement?.category).toBeUndefined();
+  });
+  it('impide códigos repetidos entre requisitos, reglas y decisiones', () => {
+    const board = demoInvestigation(); const rule = board.entities.find(entity => entity.id === 'rule-stock');
+    expect(() => updateCard(board, { ...rule!, businessRule: { code: 'rf-001' } })).toThrow();
+  });
+  it('cambia entre RF y RNF renumerando solo los códigos automáticos', () => {
+    const board = addCard(demoInvestigation(), 'requirement', 'new', now, { x: 0, y: 0 });
+    const entity = board.entities.find(item => item.id === 'new')!;
+    const nonFunctional = withRequirementType(board, entity, 'non_functional');
+    expect(nonFunctional.requirement).toMatchObject({ code: 'RNF-001', type: 'non_functional', category: 'performance' });
+    const functional = withRequirementType(board, nonFunctional, 'functional');
+    expect(functional.requirement?.code).toBe('RF-003'); expect(functional.requirement?.category).toBeUndefined();
+    const manual = withRequirementType(board, { ...entity, requirement: { ...entity.requirement!, code: 'INV-7' } }, 'non_functional');
+    expect(manual.requirement?.code).toBe('INV-7');
+    expect(investigationSchema.safeParse(updateCard(board, nonFunctional)).success).toBe(true);
   });
 });

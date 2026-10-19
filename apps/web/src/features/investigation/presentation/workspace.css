@@ -46,3 +46,42 @@
 @media (min-width: 1600px) { .sidebar { width: 260px; }.inspector { width: 330px; }.knowledge-card h3 { font-size: 17px; }.board-header { padding: 0 24px; } }
 @media (max-width: 1100px) { .sidebar { width: 218px; }.sidebar-section { padding-left: 13px; padding-right: 13px; }.create-tool { padding: 0 7px; font-size: 10px; gap: 5px; }.create-tool > svg:last-child { display: none; }.inspector { width: 280px; }.topbar { padding: 0 16px; }.breadcrumb { gap: 10px; }.breadcrumb > span:first-child, .breadcrumb > svg { display: none; }.canvas-hint span:last-child, .hint-divider { display: none; }.requirements-view { padding: 25px; }.requirements-heading { align-items: flex-start; }.requirements-heading h1 { font-size: 19px; } }
 @media (max-width: 760px) { .app-rail { width: 48px; padding-left: 4px; padding-right: 4px; }.sidebar { position: absolute; z-index: 20; width: 244px; height: 100%; box-shadow: 10px 0 30px #00000050; }.inspector { position: absolute; z-index: 21; width: 320px; max-width: calc(100vw - 64px); right: 0; top: 0; height: 100%; box-shadow: -10px 0 40px #00000060; }.stage-badge { display: none; }.topbar { padding: 0 12px; min-height: 56px; }.topbar-actions { gap: 9px; }.project-title { font-size: 11px; max-width: 170px; text-align: left; }.save-state { font-size: 9px; }.save-state > svg { display: none; }.export-button { padding: 6px; font-size: 10px; }.board-tabs { gap: 13px; }.board-tabs > button:not(.icon-button) { font-size: 10px; }.board-tabs > button:first-child > svg { display: none; }.board-header { padding: 0 12px; }.canvas-heading { left: 16px; font-size: 9px; }.canvas-count { display: none; }.canvas-toolbar { gap: 1px; padding: 4px; }.canvas-toolbar button { width: 27px; height: 31px; }.toolbar-divider { margin: 0 2px; }.canvas-hint { font-size: 8px; }.statusbar { padding: 0 9px; font-size: 8px; }.statusbar > span:first-child { max-width: 50%; overflow: hidden; white-space: nowrap; }.statusbar-separator { margin: 0 1px; }.requirements-view { padding: 20px 14px; }.requirements-heading { flex-direction: column; gap: 7px; }.table-heading, .requirement-table-row { grid-template-columns: 1fr 75px; padding: 14px; gap: 10px; }.table-heading span:last-child { display: none; }.requirement-table-row > span:last-child { grid-column: 1 / -1; width: fit-content; gap: 20px; }.dialog-heading { padding: 14px 18px; }.error-banner { padding: 8px 12px; }.document-preview { padding: 25px; } }
+
+/* Tipos de análisis, negocio y solución. */
+.creation-group + .creation-group { margin-top: 10px; }
+.creation-group-label { display: block; font-size: 9.5px; letter-spacing: .4px; text-transform: uppercase; color: #7d8394; margin-bottom: 5px; }
+.creation-group .creation-tools { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.creation-group .create-tool { min-width: 0; padding: 0 7px; gap: 6px; }
+.creation-group .create-tool > svg:last-child { display: none; }
+.create-tool > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.create-tool.problem > svg:first-child { color: #e0928a; }
+.create-tool.question > svg:first-child { color: #93b4e6; }
+.create-tool.actor > svg:first-child { color: #86c3cc; }
+.create-tool.business_rule > svg:first-child { color: #e2ab76; }
+.create-tool.external_system > svg:first-child { color: #a9b1c4; }
+.create-tool.decision > svg:first-child { color: #d9a2cc; }
+.knowledge-card.problem { background: #272021; border-color: #5a3b3b; }
+.knowledge-card.question { background: #1f232c; border-color: #3b4a63; }
+.knowledge-card.actor { background: #1f2629; border-color: #36525a; }
+.knowledge-card.business_rule { background: #27221d; border-color: #5a4532; }
+.knowledge-card.external_system { background: #212329; border-color: #474c5a; }
+.knowledge-card.decision { background: #272028; border-color: #563f55; }
+.problem .card-category, .problem .card-ref { color: #e3a097; }
+.question .card-category { color: #9dbbe8; }
+.actor .card-category { color: #8fc6ce; }
+.business_rule .card-category, .business_rule .card-ref { color: #e4b383; }
+.external_system .card-category { color: #b0b7c8; }
+.decision .card-category, .decision .card-ref { color: #ddaad1; }
+.inspector-identity.problem .identity-icon { color: #e3a097; background: #b8574d17; border-color: #b8574d40; }
+.inspector-identity.question .identity-icon { color: #9dbbe8; background: #5b7fb817; border-color: #5b7fb840; }
+.inspector-identity.actor .identity-icon { color: #8fc6ce; background: #4f959e17; border-color: #4f959e40; }
+.inspector-identity.business_rule .identity-icon { color: #e4b383; background: #b8804717; border-color: #b8804740; }
+.inspector-identity.external_system .identity-icon { color: #b0b7c8; background: #6c748817; border-color: #6c748840; }
+.inspector-identity.decision .identity-icon { color: #ddaad1; background: #a35f9617; border-color: #a35f9640; }
+.kind-chip { display: inline-flex; align-items: center; font-size: 10px; border: 1px solid #ffffff12; border-radius: 4px; padding: 4px 7px; color: #b9bdcc; background: #ffffff08; }
+.status.open, .status.proposed { color: #d8c08e; }
+.status.resolved, .status.answered, .status.accepted { color: #9bc9ad; }
+.status.discarded, .status.superseded, .status.rejected { color: #8d93a3; }
+.requirements-group + .requirements-group { margin-top: 28px; }
+.requirements-group h2 { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 560; color: #c7cad6; margin: 0 0 12px; }
+.requirements-group h2 span { font-size: 11px; color: #8d93a3; font-weight: 450; }

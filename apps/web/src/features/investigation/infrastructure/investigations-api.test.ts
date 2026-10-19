@@ -43,7 +43,7 @@ describe('Proyección y guardado del tablero remoto', () => {
   });
   it('abre en una sesión nueva sin simular que se recuperaron archivos', async () => {
     const result = await projectRemoteBoard(remote(), undefined, 'copy');
-    expect(result.board.entities).toHaveLength(8); expect(result.board.edges).toHaveLength(7);
+    expect(result.board.entities).toHaveLength(12); expect(result.board.edges).toHaveLength(12);
     expect(result.board.assets.every(asset => asset.url === undefined)).toBe(true); expect(result.draft).toBeUndefined();
   });
   it('no crea copias por el orden de claves JSONB', async () => {
