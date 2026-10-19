@@ -10,6 +10,7 @@ playwright-report/
 coverage/
 .playwright-mcp/
 .local/
+.netlify/
 dist/
 
 # Research material and local evidence are not source code for publication.

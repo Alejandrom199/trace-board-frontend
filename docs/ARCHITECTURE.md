@@ -1,7 +1,7 @@
 # Arquitectura de TraceBoard
 
 ## Estado y alcance
-Frontend Next.js/React en apps/web y API NestJS en apps/api. PostgreSQL guarda investigaciones y snapshots validados de tarjetas, relaciones, posiciones, viewport y metadatos. Los originales PDF/imágenes están en una tabla aparte. IndexedDB mantiene el borrador y los binarios de las subidas locales. Antes del prototipo no existían fuentes, configuración ni historial Git: solo skills.
+Frontend Next.js/React en apps/web y API NestJS en apps/api. IndexedDB mantiene el tablero y los binarios durables en el navegador. La API puede usar PostgreSQL o adaptadores efímeros en memoria; el despliegue actual de Railway usa memoria y no promete conservar investigaciones ni archivos después de reinicios o suspensión. Antes del prototipo no existían fuentes, configuración ni historial Git: solo skills.
 
 ## Módulos y dependencias
 La funcionalidad visual está en `apps/web/src/features/investigation`. Su dominio/canvas se conserva. `apps/api/src/features/investigations` contiene dominio, casos de uso, puerto de repositorio, adaptador PostgreSQL y controladores de investigación.
@@ -61,6 +61,12 @@ En la slice investigations de API, domain/file valida nombres/tipos/firmas/lími
 El contrato de tablero solo añade asset.file={id,sha256}, no bytes ni URL. El modelo local usa remoteFile con investigación de origen; presentación deriva URLs únicamente hacia la API. remote-files.ts sube secuencialmente, valida confirmación y mantiene URL local; después el snapshot se confirma con revisión. La confirmación actualiza vínculos solo de los adjuntos del snapshot que siguen presentes sin cambios; conserva ediciones concurrentes del usuario. Si falla el PUT, el archivo subido puede permanecer sin referencia, pero un reintento reutiliza la misma copia. Las vistas remotas descargan/verifican MIME/tamaño/hash al abrir y revocan sus Blob URLs al cerrar. Ver ADR-005.
 
 Los scripts de desarrollo crean una instancia PostgreSQL dedicada al proyecto, con datos en .local y roles/credenciales separados. Los tests de integración usan traceboard_test, no la base de trabajo; las copias originales locales y las bases existentes del equipo no se modifican.
+
+## Despliegue Netlify y Railway
+
+Netlify ejecuta Next.js y su Route Handler `/api/investigations` como proxy del backend. `TRACEBOARD_API_URL` y `TRACEBOARD_API_TOKEN` son variables exclusivas del servidor; no usan prefijo público ni se incorporan al bundle del navegador. Railway valida el mismo token antes de sus controladores de investigación y deja público únicamente `/api/health`.
+
+Railway usa `TRACEBOARD_STORAGE=memory`, `HOST=0.0.0.0`, una réplica y Serverless/App Sleeping. Los adaptadores de memoria implementan los mismos puertos de aplicación que PostgreSQL. Se limitan a 500 investigaciones y 50 MiB de archivos por instancia. El arranque en frío puede requerir reintento y toda copia remota es temporal; IndexedDB sigue siendo la fuente durable de esta versión. Ver ADR-007.
 
 ## Calidad y evolución
 ESLint y TypeScript estricto son obligatorios. `check:architecture` verifica imports con el AST de TypeScript, incluyendo imports dinámicos/reexports, capas y API pública; sus limitaciones se documentan en el script. Vitest cubre integridad, acciones, trazabilidad y persistencia. Playwright cubre creación/edición/recarga y relaciones si el navegador está disponible. Las entregas frontend/backend para GitHub incluyen CI de calidad y control de secretos; su ejecución real se registra en GITHUB-VERIFICATION.md. No se configuró protección de ramas remotas.

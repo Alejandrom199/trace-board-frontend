@@ -13,7 +13,7 @@ npm run dev
 
 Abrir http://127.0.0.1:3000. Iniciar el backend por separado para guardado remoto; el modo local funciona sin API. TRACEBOARD_API_URL es una variable del servidor Next.js, por defecto http://127.0.0.1:4000. Se puede copiar apps/web/.env.example a apps/web/.env.local para cambiarla; rebuild si cambia el proxy.
 
-Producción local: npm run build y npm start. Mantener el host/puerto del frontend conserva sus investigaciones locales.
+Producción local: npm run build y npm start. Netlify usa netlify.toml; Railway usa apps/api/railway.json. El despliegue Railway selecciona TRACEBOARD_STORAGE=memory y su estado remoto es efímero. Mantener el host/puerto del frontend conserva sus investigaciones locales.
 
 ## Calidad
 
@@ -30,6 +30,6 @@ E2E locales: instalar Chromium con npx playwright install chromium y ejecutar np
 
 ## Contratos y seguridad
 
-packages/contracts contiene únicamente DTO/esquemas HTTP. contracts-manifest.json identifica el snapshot común con el otro repositorio; sincronizar ambos al cambiar contratos. No publicar credenciales, bases, documentos reales ni capturas. Solo ejemplos ficticios en código/pruebas. La API actual escucha en loopback y no tiene autenticación; subir código a GitHub no habilita un despliegue público seguro.
+packages/contracts contiene únicamente DTO/esquemas HTTP. contracts-manifest.json identifica el snapshot común con el otro repositorio; sincronizar ambos al cambiar contratos. No publicar credenciales, bases, documentos reales ni capturas. Solo ejemplos ficticios en código/pruebas. En producción, Netlify y Railway comparten TRACEBOARD_API_TOKEN mediante variables protegidas; el valor no se versiona ni llega al navegador.
 
 Ver [arquitectura](docs/ARCHITECTURE.md), [publicación](docs/GITHUB.md), [reglas](AGENTS.md) y [detalle de la aplicación](apps/web/README.md). El workspace de desarrollo conserva ambas apps; este repositorio contiene solo apps/web.

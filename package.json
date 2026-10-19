@@ -21,7 +21,9 @@
     "check:architecture": "node scripts/check-architecture.mjs --self-test",
     "check:secrets": "node scripts/check-secrets.mjs",
     "check:contracts": "node scripts/check-contracts.mjs",
-    "test:e2e": "npm run test:e2e -w @traceboard/web"
+    "test:e2e": "npm run test:e2e -w @traceboard/web",
+    "build:web": "npm run build:contracts && npm run build -w @traceboard/web",
+    "start:web": "npm run start -w @traceboard/web"
   },
   "devDependencies": {
     "typescript": "6.0.3"

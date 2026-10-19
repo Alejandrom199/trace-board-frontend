@@ -1,6 +1,6 @@
 # TraceBoard web
 
-Frontend Next.js, React y canvas. No importa código de `apps/api` ni accede a PostgreSQL. El navegador consume `/api/investigations`; el servidor Next.js lo reenvía a la API configurada en `TRACEBOARD_API_URL`, por defecto http://127.0.0.1:4000.
+Frontend Next.js, React y canvas. No importa código de `apps/api` ni accede a persistencia del backend. El navegador consume `/api/investigations`; un Route Handler del servidor Next.js lo reenvía a `TRACEBOARD_API_URL` y añade `TRACEBOARD_API_TOKEN` sin exponerlo al navegador. Por defecto usa http://127.0.0.1:4000.
 
 Desde la raíz, `npm run dev`. Abre http://127.0.0.1:3000. Para el recorrido de base de datos, inicia además PostgreSQL y API según el README raíz.
 
