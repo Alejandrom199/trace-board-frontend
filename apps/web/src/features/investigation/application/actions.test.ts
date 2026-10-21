@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { demoInvestigation } from '../domain/demo';
 import { investigationSchema, evidenceFor, cardTypes, entitySchema } from '../domain/model';
-import { addCard, connectCards, createInvestigation, removeCards, removeInvestigation, updateCard, updateRelation, withRequirementType } from './actions';
+import { addCard, connectCards, createInvestigation, mergeGeneratedFlow, removeCards, removeInvestigation, updateCard, updateRelation, withRequirementType } from './actions';
 const now = '2026-10-13T15:00:00.000Z';
 describe('Integridad y acciones de investigación', () => {
   it('valida el tablero de inventario sin referencias huérfanas', () => { expect(investigationSchema.safeParse(demoInvestigation()).success).toBe(true); });
@@ -97,5 +97,30 @@ describe('Integridad y acciones de investigación', () => {
     const manual = withRequirementType(board, { ...entity, requirement: { ...entity.requirement!, code: 'INV-7' } }, 'non_functional');
     expect(manual.requirement?.code).toBe('INV-7');
     expect(investigationSchema.safeParse(updateCard(board, nonFunctional)).success).toBe(true);
+  });
+  it('incorpora solo las entidades de IA aceptadas, con relaciones filtradas a las aceptadas y marcadas como flujo', () => {
+    const flow = {
+      entities: [
+        { ref: 'e1', kind: 'actor' as const, title: 'Cliente', description: '', actor: { category: 'user' as const } },
+        { ref: 'e2', kind: 'process' as const, title: 'Registrar pedido', description: 'Captura los datos' },
+        { ref: 'e3', kind: 'process' as const, title: 'Descartado', description: '' },
+      ],
+      relations: [{ from: 'e1', to: 'e2', relation: 'performs' as const, flow: true }, { from: 'e2', to: 'e3', relation: 'related_to' as const, flow: false }],
+    };
+    let ids = 0; const nextId = () => `gen-${++ids}`;
+    const before = demoInvestigation();
+    const board = mergeGeneratedFlow(before, flow, new Set(['e1', 'e2']), nextId, now, { x: 0, y: 0 });
+    expect(board.entities.filter(entity => entity.title === 'Cliente' || entity.title === 'Registrar pedido')).toHaveLength(2);
+    expect(board.entities.some(entity => entity.title === 'Descartado')).toBe(false);
+    // Solo la relación "performs" se crea: la otra referencia a e3, una entidad descartada.
+    expect(board.edges).toHaveLength(before.edges.length + 1);
+    const edge = board.edges.find(edge => edge.relation === 'performs');
+    expect(edge?.metadata).toEqual({ categoria: 'flujo' });
+    expect(investigationSchema.safeParse(board).success).toBe(true);
+  });
+  it('no modifica el tablero cuando no se acepta ninguna entidad propuesta', () => {
+    const flow = { entities: [{ ref: 'e1', kind: 'process' as const, title: 'Proceso', description: '' }], relations: [] };
+    const board = demoInvestigation();
+    expect(mergeGeneratedFlow(board, flow, new Set(), () => 'gen', now, { x: 0, y: 0 })).toBe(board);
   });
 });

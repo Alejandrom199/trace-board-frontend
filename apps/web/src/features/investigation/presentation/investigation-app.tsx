@@ -3,10 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ReactFlowProvider, type ReactFlowInstance, type Connection } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Network, ChevronDown, ChevronRight, Plus, Search, PanelLeftClose, PanelLeftOpen, ArrowDownToLine, Upload, MousePointer2, Hand, Link2, Minus, Maximize, Map, Command, X, Check, FolderOpen, ListChecks, CircleHelp, ArrowUpRight, AlertTriangle, LayoutGrid, CheckCircle2, Clock3, Undo2, Redo2, Trash2 } from 'lucide-react';
+import { Network, ChevronDown, ChevronRight, Plus, Search, PanelLeftClose, PanelLeftOpen, ArrowDownToLine, Upload, MousePointer2, Hand, Link2, Minus, Maximize, Map, Command, X, Check, FolderOpen, ListChecks, CircleHelp, ArrowUpRight, AlertTriangle, LayoutGrid, CheckCircle2, Clock3, Undo2, Redo2, Trash2, Sparkles } from 'lucide-react';
 import { cardGroups, cardLabels, entityCode, relationTypes, relationLabels, type CardType, type Investigation, type RelationType, type Workspace } from '../domain/model';
 import { demoWorkspace } from '../domain/demo';
-import { addCard, removeInvestigation, connectCards, createInvestigation, removeCards, updateCard, updateRelation } from '../application/actions';
+import { addCard, removeInvestigation, connectCards, createInvestigation, mergeGeneratedFlow, removeCards, updateCard, updateRelation } from '../application/actions';
 import { decodeWorkspace, MAX_WORKSPACE_LENGTH } from '../infrastructure/local-storage';
 import { loadBrowserWorkspace, saveBrowserWorkspace } from '../infrastructure/indexed-db';
 import { readAsset } from '../infrastructure/files';
@@ -14,16 +14,17 @@ import { BoardCanvas, fromCanvasId } from './board-canvas';
 import { Inspector } from './inspector';
 import { cardIcons, type CanvasNode } from './card-node';
 import { RequirementGroup } from './requirement-group';
+import { AiGenerateDialog } from './ai-generate-dialog';
 import type { CanvasEdge } from './semantic-edge';
 import { Dialog, PreviewDialog } from './dialogs';
 import { useBoardHistory } from './use-board-history';
 import { RemoteInvestigations } from './remote-investigations';
 import { RemoteBoardSave } from './remote-board-save';
 import { projectRemoteBoard } from '../infrastructure/investigations-api';
-import type { BoardDto } from '@traceboard/contracts';
+import type { BoardDto, AiGeneratedFlow } from '@traceboard/contracts';
 import './remote-investigations.css';
 
-type Modal = 'projects' | 'relation' | 'search' | 'help' | null;
+type Modal = 'projects' | 'relation' | 'search' | 'help' | 'ai-generate' | null;
 const now = () => new Date().toISOString();
 const uid = () => crypto.randomUUID();
 
@@ -165,6 +166,13 @@ function InvestigationWorkspace() {
     const id = uid(); if (mutate(board => addCard(board, kind, id, now(), position), 'Crear tarjeta')) { select([id]); setEdgeId(null); setView('board'); }
   }, [mutate, select]);
   const openRelation = useCallback(() => { setRelationSource(selected[0] ?? board?.entities[0]?.id ?? ''); setRelationTarget(selected[1] ?? board?.entities.find(entity => entity.id !== selected[0])?.id ?? ''); setRelationType('evidences'); setModal('relation'); }, [board, selected]);
+  const applyAiFlow = useCallback((flow: AiGeneratedFlow, acceptedRefs: Set<string>) => {
+    const current = latestRef.current?.investigations.find(item => item.id === latestRef.current?.activeId);
+    const origin = current?.elements.length ? { x: Math.min(...current.elements.map(element => element.x)), y: Math.max(...current.elements.map(element => element.y)) + 220 } : { x: 300, y: 200 };
+    if (mutate(board => mergeGeneratedFlow(board, flow, acceptedRefs, uid, now(), origin), 'Generar flujo con IA')) {
+      setModal(null); setView('board'); setToast(`${acceptedRefs.size} ${acceptedRefs.size === 1 ? 'tarjeta añadida' : 'tarjetas añadidas'} desde IA. Puedes deshacer esta acción.`);
+    }
+  }, [mutate]);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -301,6 +309,7 @@ function InvestigationWorkspace() {
         {sidebar && <aside className="sidebar" aria-label="Recursos y herramientas">
           <div className="sidebar-title"><span>Espacio de investigación</span><button className="icon-button" aria-label="Ocultar barra lateral" onClick={() => setSidebar(false)}><PanelLeftClose size={16} /></button></div>
           <button className="investigation-switch" onClick={() => setModal('projects')}><span className="project-icon"><FolderOpen size={18} /></span><span><strong>{board.name}</strong><small>{board.id === 'inventory' ? 'Bodega Central' : 'Investigación'}</small></span><ChevronDown size={14} /></button>
+          <div className="sidebar-section"><button className="ai-generate-button" onClick={() => setModal('ai-generate')}><Sparkles size={16} /><span>Generar flujo con IA<small>Desde un documento subido</small></span></button></div>
           <div className="sidebar-section"><div className="section-title">Crear tarjeta<kbd>N</kbd></div>{cardGroups.map(group => <div className="creation-group" key={group.label} role="group" aria-label={group.label}><span className="creation-group-label">{group.label}</span><div className="creation-tools">{group.types.map(type => { const Icon = cardIcons[type]; return <button key={type} className={`create-tool ${type}`} onClick={() => createCard(type)} aria-label={`Añadir ${cardLabels[type].toLowerCase()}`} title={cardLabels[type]}><Icon size={17} /><span>{cardLabels[type]}</span><Plus size={13} /></button>; })}</div></div>)}</div>
           <div className="sidebar-section resource-section"><div className="section-title">Recursos <span className="count">{files.length}</span><button className="icon-button" aria-label="Adjuntar archivos" onClick={() => inputRef.current?.click()} disabled={busy}><Plus size={16} /></button></div>
             {files.map(item => { const Icon = cardIcons[item.kind]; const asset = board.assets.find(asset => asset.id === item.assetId); return <button className={`resource-item ${selected.includes(item.id) ? 'active' : ''}`} key={item.id} onClick={() => focusEntity(item.id)}><span className={`resource-icon ${item.kind}`}><Icon size={16} /></span><span>{asset?.name ?? item.title}<small>{asset ? `${Math.round(asset.size / 1000)} KB` : 'Sin archivo'} {asset?.id.endsWith('-file') ? '· Ejemplo' : ''}</small></span></button>; })}
@@ -335,6 +344,7 @@ function InvestigationWorkspace() {
     {modal === 'projects' && <Dialog title="Tus investigaciones" onClose={() => { setModal(null); setConfirmDelete(null); }}><div className="projects-dialog"><p className="muted">Tus tableros locales se conservan en este navegador.</p>{workspace.investigations.map(item => confirmDelete === item.id ? <div className="project-confirm" key={item.id} role="group" aria-label={`Confirmar eliminación de ${item.name}`}><p><strong>¿Eliminar «{item.name}»?</strong><small>Se borra de este navegador con sus {item.entities.length} tarjetas. {item.remote ? 'La copia en la base de datos no cambia.' : 'Exporta una copia si la necesitas.'}</small></p><div><button className="secondary-button" onClick={() => setConfirmDelete(null)}>Cancelar</button><button className="danger-button solid" onClick={() => deleteLocal(item.id)}><Trash2 size={14} />Eliminar</button></div></div>
             : <div className="project-item" key={item.id}><button className={`project-row ${item.id === board.id ? 'active' : ''}`} onClick={() => changeActive(item.id)}><FolderOpen size={22} /><span><strong>{item.name}</strong><small>{item.entities.length} tarjetas · {item.edges.length} relaciones</small></span>{item.id === board.id ? <Check size={17} /> : <ChevronRight size={17} />}</button><button className="icon-button project-delete" onClick={() => setConfirmDelete(item.id)} disabled={workspace.investigations.length < 2} aria-label={`Eliminar investigación ${item.name}`} title={workspace.investigations.length < 2 ? 'Debe quedar al menos una investigación' : 'Eliminar investigación'}><Trash2 size={15} /></button></div>)}<RemoteInvestigations onOpen={openDatabaseInvestigation} /><form onSubmit={event => { event.preventDefault(); try { const project = createInvestigation(uid(), newProjectName, now()); const next = decodeWorkspace(JSON.stringify({ ...workspace, activeId: project.id, investigations: [...workspace.investigations, project] })); setWorkspace(next); setSaveStatus('pending'); setNewProjectName(''); closeInspector(); setModal(null); } catch { setError('Introduce un nombre válido. Se admiten hasta 30 investigaciones.'); } }}><label>Nueva investigación local<input aria-label="Nombre de investigación" maxLength={120} required placeholder="Ej. Sistema de compras" value={newProjectName} onChange={event => setNewProjectName(event.target.value)} /></label><button className="primary-button" type="submit"><Plus size={15} />Crear investigación</button></form><button className="secondary-button full" onClick={() => importRef.current?.click()}><Upload size={15} />Importar una copia JSON</button></div></Dialog>}
     {modal === 'relation' && <Dialog title="Conectar conocimiento" onClose={() => setModal(null)}><form className="relation-dialog" onSubmit={event => { event.preventDefault(); if (!relationSource || !relationTarget || relationSource === relationTarget) { setError('Selecciona dos tarjetas diferentes.'); return; } if (board.edges.some(edge => edge.sourceId === relationSource && edge.targetId === relationTarget && edge.relation === relationType)) { setError('Esta relación ya existe.'); return; } if (mutate(current => connectCards(current, relationSource, relationTarget, relationType, uid(), now()), 'Crear relación')) { setModal(null); setToast('Relación semántica creada'); } }}><p className="muted">Elige qué conecta estas tarjetas, más allá de una flecha.</p><label>Tarjeta de origen<select aria-label="Tarjeta de origen" value={relationSource} onChange={event => setRelationSource(event.target.value)}>{board.entities.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label><label>Tipo de relación<select aria-label="Tipo de relación" value={relationType} onChange={event => setRelationType(event.target.value as RelationType)}>{relationTypes.map(type => <option key={type} value={type}>{relationLabels[type]}</option>)}</select></label><label>Tarjeta de destino<select aria-label="Tarjeta de destino" value={relationTarget} onChange={event => setRelationTarget(event.target.value)}>{board.entities.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label><div className="relation-example"><span>{board.entities.find(entity => entity.id === relationSource)?.title ?? 'Origen'}</span><strong><Link2 size={14} />{relationLabels[relationType]}</strong><span>{board.entities.find(entity => entity.id === relationTarget)?.title ?? 'Destino'}</span></div><button className="primary-button full" type="submit" disabled={board.entities.length < 2}><Link2 size={16} />Crear relación</button></form></Dialog>}
+    {modal === 'ai-generate' && <AiGenerateDialog onClose={() => setModal(null)} onApply={applyAiFlow} />}
     {modal === 'help' && <Dialog title="Tu espacio de investigación" onClose={() => setModal(null)}><div className="help-dialog"><p>Mueve tarjetas, conecta los puntos y convierte tus hallazgos en requisitos con fuentes identificables.</p><dl><dt>Deshacer / rehacer</dt><dd><kbd>Ctrl+Z</kbd> / <kbd>Ctrl+Shift+Z</kbd></dd><dt>Crear nota</dt><dd><kbd>N</kbd> o doble clic en el lienzo</dd><dt>Seleccionar / mover lienzo</dt><dd><kbd>V</kbd> / <kbd>H</kbd></dd><dt>Buscar tarjetas</dt><dd><kbd>Ctrl</kbd> + <kbd>K</kbd></dd><dt>Ajustar todo el tablero</dt><dd><kbd>F</kbd></dd><dt>Selección múltiple</dt><dd><kbd>Shift</kbd> + clic</dd><dt>Eliminar selección</dt><dd><kbd>Supr</kbd> / <kbd>Backspace</kbd></dd><dt>Zoom</dt><dd>Ctrl + rueda o controles inferiores</dd></dl><p className="preview-notice">El guardado es local. Exporta una copia antes de borrar los datos del navegador. Los archivos admiten hasta 10 MB; Word y Excel conservan solo metadatos. Los recursos iniciales son ejemplos.</p></div></Dialog>}
     {previewEntity && <PreviewDialog entity={previewEntity} asset={board.assets.find(asset => asset.id === previewEntity.assetId)} onClose={() => setPreviewId(null)} />}
   </div>;

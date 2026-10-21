@@ -1,3 +1,4 @@
+import type { AiGeneratedFlow } from '@traceboard/contracts';
 import { codePrefixes, entityCode, investigationSchema, workspaceSchema, type CardType, type Entity, type Investigation, type Relation, type RelationType, type RequirementType, type Workspace } from '../domain/model';
 
 const newTitles: Record<CardType, string> = {
@@ -11,7 +12,8 @@ export function nextCode(entities: Entity[], prefix: string): string {
   while (codes.has(`${prefix}-${String(sequence).padStart(3, '0')}`)) sequence++;
   return `${prefix}-${String(sequence).padStart(3, '0')}`;
 }
-function defaultAttributes(kind: CardType, entities: Entity[]): Partial<Entity> {
+/** Atributos por defecto de cada tipo al crearlo, iguales si viene de una herramienta de creación o de una propuesta de IA aceptada. */
+export function defaultAttributes(kind: CardType, entities: Entity[]): Partial<Entity> {
   switch (kind) {
     case 'requirement': return { requirement: { code: nextCode(entities, codePrefixes.functional), priority: 'medium', status: 'draft', criteria: [], type: 'functional' } };
     case 'actor': return { actor: { category: 'user' } };
@@ -63,4 +65,33 @@ export function connectCards(board: Investigation, sourceId: string, targetId: s
 export function updateRelation(board: Investigation, edge: Relation, now: string): Investigation {
   if (!board.edges.some(item => item.id === edge.id)) throw new Error('La relación ya no existe');
   return investigationSchema.parse({ ...board, updatedAt: now, edges: board.edges.map(item => item.id === edge.id ? edge : item) });
+}
+/** Incorpora las entidades/relaciones de una propuesta de IA que la persona aceptó en la revisión.
+ * Mismos valores por defecto que crear una tarjeta a mano; una cuadrícula simple evita superponerlas sobre el tablero existente. */
+export function mergeGeneratedFlow(board: Investigation, flow: AiGeneratedFlow, acceptedRefs: Set<string>, ids: () => string, now: string, origin: { x: number; y: number }): Investigation {
+  const accepted = flow.entities.filter(entity => acceptedRefs.has(entity.ref));
+  const refToId = new Map<string, string>();
+  const newEntities: Entity[] = [];
+  const newElements: { nodeId: string; x: number; y: number }[] = [];
+  for (const [index, proposed] of accepted.entries()) {
+    const id = ids();
+    refToId.set(proposed.ref, id);
+    const attrs = defaultAttributes(proposed.kind, [...board.entities, ...newEntities]);
+    const overrides: Partial<Entity> =
+      proposed.kind === 'actor' && proposed.actor ? { actor: proposed.actor }
+      : proposed.kind === 'requirement' && proposed.requirement ? { requirement: { ...attrs.requirement!, type: proposed.requirement.type, category: proposed.requirement.type === 'non_functional' ? 'performance' : undefined } }
+      : proposed.kind === 'problem' && proposed.problem ? { problem: { ...attrs.problem!, severity: proposed.problem.severity } }
+      : {};
+    newEntities.push({ id, kind: proposed.kind, title: proposed.title.trim().slice(0, 200) || newTitles[proposed.kind], description: proposed.description.slice(0, 10000), createdAt: now, updatedAt: now, ...attrs, ...overrides });
+    newElements.push({ nodeId: id, x: origin.x + (index % 3) * 340, y: origin.y + Math.floor(index / 3) * 190 });
+  }
+  const newEdges: Relation[] = flow.relations.flatMap(relation => {
+    const sourceId = refToId.get(relation.from);
+    const targetId = refToId.get(relation.to);
+    if (!sourceId || !targetId || sourceId === targetId) return [];
+    const metadata: Record<string, string> = relation.flow ? { categoria: 'flujo' } : {};
+    return [{ id: ids(), sourceId, targetId, relation: relation.relation, description: '', createdAt: now, metadata }];
+  });
+  if (!newEntities.length) return board;
+  return investigationSchema.parse({ ...board, updatedAt: now, entities: [...board.entities, ...newEntities], elements: [...board.elements, ...newElements], edges: [...board.edges, ...newEdges] });
 }

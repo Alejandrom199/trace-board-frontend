@@ -19,12 +19,33 @@ function footer(entity: Entity): string {
 }
 export type CanvasNode = Node<{ entity: Entity; asset?: Asset; connections: number; flowIncoming?: boolean; flowOutgoing?: boolean; preview: (id: string) => void }, 'card'>;
 
+// Figura de actor de diagrama de casos de uso: cabeza, tronco, brazos y piernas en trazo simple.
+function ActorGlyph() {
+  return <svg viewBox="0 0 40 56" width="40" height="56" aria-hidden="true">
+    <circle cx="20" cy="9" r="8" />
+    <line x1="20" y1="17" x2="20" y2="38" />
+    <line x1="20" y1="23" x2="5" y2="31" />
+    <line x1="20" y1="23" x2="35" y2="31" />
+    <line x1="20" y1="38" x2="7" y2="55" />
+    <line x1="20" y1="38" x2="33" y2="55" />
+  </svg>;
+}
+
 export const CardNode = memo(function CardNode({ data, selected }: NodeProps<CanvasNode>) {
   const { entity, asset, connections } = data;
   const Icon = cardIcons[entity.kind];
   const extension = asset?.name.split('.').pop()?.toUpperCase();
   const source = assetSource(asset);
   const [failedSource, setFailedSource] = useState('');
+  if (entity.kind === 'actor') return <article className={`knowledge-card actor-figure ${selected ? 'is-selected' : ''}`} data-testid={`card-${entity.id}`}>
+    <Handle type="target" position={Position.Left} aria-label="Entrada de relación" />
+    <ActorGlyph />
+    <h3>{entity.title}</h3>
+    {entity.actor && <span className="kind-chip">{actorLabels[entity.actor.category]}</span>}
+    {entity.description && <p>{entity.description}</p>}
+    <span className="actor-connections"><Link2 size={11} />{connections}</span>
+    <Handle type="source" position={Position.Right} aria-label="Salida de relación" />
+  </article>;
   return <article className={`knowledge-card ${entity.kind} ${selected ? 'is-selected' : ''}`} data-testid={`card-${entity.id}`}>
     <Handle type="target" position={Position.Left} aria-label="Entrada de relación" />
     {data.flowIncoming && <Handle id="flow-in" type="target" position={Position.Top} aria-label="Entrada del recorrido" />}

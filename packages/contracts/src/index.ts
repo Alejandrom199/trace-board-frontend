@@ -37,3 +37,32 @@ export const boardDtoSchema = z.strictObject({ investigation: investigationDtoSc
 export const saveBoardRequestSchema = z.strictObject({ expectedRevision: z.number().int().min(0).max(2147483645), content: boardContentSchema });
 export type BoardContentDto = z.infer<typeof boardContentSchema>;
 export type BoardDto = z.infer<typeof boardDtoSchema>;
+
+/** Generación de flujo con IA: tipos de tarjeta que la IA puede proponer a partir de un documento.
+ * Se excluyen note/document/image porque representan fuentes subidas por la persona, no contenido inventado. */
+export const aiProposableKinds = ['finding', 'problem', 'question', 'actor', 'process', 'business_rule', 'external_system', 'requirement', 'decision'] as const;
+export const aiRelationTypes = ['evidences', 'depends_on', 'contradicts', 'originates', 'affects', 'implements', 'references', 'related_to', 'performs', 'answers'] as const;
+const ref = z.string().trim().min(1).max(20);
+export const aiProposedEntitySchema = z.strictObject({
+  ref, kind: z.enum(aiProposableKinds), title: z.string().trim().min(1).max(200), description: z.string().max(2000).default(''),
+  actor: z.strictObject({ category: z.enum(['user', 'stakeholder', 'area']) }).optional(),
+  requirement: z.strictObject({ type: z.enum(['functional', 'non_functional']) }).optional(),
+  problem: z.strictObject({ severity: priority }).optional(),
+}).superRefine((entity, ctx) => {
+  if ((entity.kind === 'actor') !== Boolean(entity.actor)) ctx.addIssue({ code: 'custom', message: 'Un actor propuesto necesita categoría y ningún otro tipo la admite' });
+  if ((entity.kind === 'requirement') !== Boolean(entity.requirement)) ctx.addIssue({ code: 'custom', message: 'Un requisito propuesto necesita tipo y ningún otro tipo lo admite' });
+  if ((entity.kind === 'problem') !== Boolean(entity.problem)) ctx.addIssue({ code: 'custom', message: 'Un problema propuesto necesita severidad y ningún otro tipo la admite' });
+});
+export const aiProposedRelationSchema = z.strictObject({ from: ref, to: ref, relation: z.enum(aiRelationTypes), flow: z.boolean().default(false) });
+export const aiGeneratedFlowSchema = z.strictObject({
+  entities: z.array(aiProposedEntitySchema).min(1).max(40), relations: z.array(aiProposedRelationSchema).max(80),
+}).superRefine((flow, ctx) => {
+  const refs = new Set(flow.entities.map(entity => entity.ref));
+  if (refs.size !== flow.entities.length) ctx.addIssue({ code: 'custom', message: 'Referencias de entidad repetidas' });
+  for (const relation of flow.relations) if (!refs.has(relation.from) || !refs.has(relation.to) || relation.from === relation.to) ctx.addIssue({ code: 'custom', message: 'Relación con referencias inexistentes o repetidas' });
+});
+export const aiGenerateFlowResponseSchema = z.strictObject({ flow: aiGeneratedFlowSchema, truncated: z.boolean() });
+export type AiProposedEntity = z.infer<typeof aiProposedEntitySchema>;
+export type AiProposedRelation = z.infer<typeof aiProposedRelationSchema>;
+export type AiGeneratedFlow = z.infer<typeof aiGeneratedFlowSchema>;
+export type AiGenerateFlowResponse = z.infer<typeof aiGenerateFlowResponseSchema>;

@@ -64,9 +64,14 @@ El contrato de tablero solo añade asset.file={id,sha256}, no bytes ni URL. El m
 
 Los scripts de desarrollo crean una instancia PostgreSQL dedicada al proyecto, con datos en .local y roles/credenciales separados. Los tests de integración usan traceboard_test, no la base de trabajo; las copias originales locales y las bases existentes del equipo no se modifican.
 
+## Generación de flujo con IA
+`apps/api/src/features/ai-flow` es independiente de `investigations`: no conoce su dominio ni persiste nada. `domain/flow-generation` valida el documento (PDF con texto, .txt o .md, hasta 10 MB) y la respuesta del modelo contra el contrato compartido; `application/generate-flow` orquesta texto → prompt → modelo sin acoplarse a una librería o proveedor concreto (`DocumentTextPort`, `FlowModelPort`); `infrastructure` implementa esos puertos con `pdf-parse` y el endpoint compatible con chat completions de Hugging Face Inference Providers (capa gratuita, modelo configurable por `HF_MODEL`). `POST /api/ai/generate-flow` exige el mismo `TRACEBOARD_API_TOKEN`; sin `HF_API_TOKEN` configurado responde 503 y el resto de la API no se ve afectado.
+
+En el frontend, `ai-generate-dialog.tsx` sube el documento, muestra el flujo propuesto con una casilla por entidad (todas aceptadas por defecto) y solo arma relaciones entre entidades aceptadas. `application/mergeGeneratedFlow` reutiliza los mismos valores por defecto y validaciones que crear una tarjeta a mano, en una sola acción de deshacer/rehacer; las relaciones de secuencia se marcan `metadata.categoria=flujo` para la proyección ortogonal ya existente. No hay persistencia remota de la propuesta: igual que cualquier otra edición, el alta pasa por el autoguardado local habitual. Ver ADR-009.
+
 ## Despliegue Netlify y Railway
 
-Netlify ejecuta Next.js y su Route Handler `/api/investigations` como proxy del backend. `TRACEBOARD_API_URL` y `TRACEBOARD_API_TOKEN` son variables exclusivas del servidor; no usan prefijo público ni se incorporan al bundle del navegador. Railway valida el mismo token antes de sus controladores de investigación y deja público únicamente `/api/health`.
+Netlify ejecuta Next.js y sus Route Handlers `/api/investigations` y `/api/ai` como proxy del backend, compartiendo la misma lógica de reenvío (`apps/web/src/app/api/http-proxy.ts`). `TRACEBOARD_API_URL` y `TRACEBOARD_API_TOKEN` son variables exclusivas del servidor; no usan prefijo público ni se incorporan al bundle del navegador. Railway valida el mismo token antes de sus controladores de investigación y de IA, y deja público únicamente `/api/health`.
 
 Railway usa `TRACEBOARD_STORAGE=memory`, `HOST=0.0.0.0`, una réplica y Serverless/App Sleeping. Los adaptadores de memoria implementan los mismos puertos de aplicación que PostgreSQL. Se limitan a 500 investigaciones y 50 MiB de archivos por instancia. El arranque en frío puede requerir reintento y toda copia remota es temporal; IndexedDB sigue siendo la fuente durable de esta versión. Ver ADR-007.
 
